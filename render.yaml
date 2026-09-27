@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: ie-casino-games
+    runtime: node
+    plan: free
+    buildCommand: bash deploy/build.sh
+    startCommand: bash deploy/start.sh
+    healthCheckPath: /game/
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: SITES_RUNTIME_ROOT
+        value: /tmp/casa21-runtime
