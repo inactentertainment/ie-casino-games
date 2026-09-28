@@ -10,7 +10,5 @@ unzip -q "$ARCHIVE" -d "$WORKDIR"
 
 cd "$WORKDIR/casa11"
 
-corepack enable
-corepack prepare pnpm@11.25.0 --activate
-pnpm install --frozen-lockfile
-pnpm build
+npx --yes pnpm@11.25.0 install --frozen-lockfile
+npx --yes pnpm@11.25.0 build
