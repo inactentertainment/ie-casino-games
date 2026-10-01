@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IE Casino Games — Restored Build 23</title>
+<title>IE Casino Games — Build 24</title>
 <style>
 html,body{margin:0;min-height:100%;background:#020304;color:#fff;font-family:Arial,sans-serif}
 #loading{min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px}
@@ -15,7 +15,7 @@ html,body{margin:0;min-height:100%;background:#020304;color:#fff;font-family:Ari
 </style>
 </head>
 <body>
-<div id="loading"><div><div class="mark">IE · CASINO GAMES</div><div class="sub">RESTORING APPROVED BUILD 23</div><div class="bar"><i id="bar"></i></div><div class="note">Loading the exact approved game build</div></div></div>
+<div id="loading"><div><div class="mark">IE · CASINO GAMES</div><div class="sub">LOADING BUILD 24</div><div class="bar"><i id="bar"></i></div><div class="note">Loading the approved game with timing corrections</div></div></div>
 <script>
 (async()=>{
   try{
@@ -35,7 +35,49 @@ html,body{margin:0;min-height:100%;background:#020304;color:#fff;font-family:Ari
     const bin=atob(b64);
     const bytes=new Uint8Array(bin.length);
     for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    const html=new TextDecoder('utf-8').decode(bytes);
+    let html=new TextDecoder('utf-8').decode(bytes);
+
+/* BUILD 24 — timing/functionality corrections applied to the approved Build 23 source before render. */
+html=html
+  /* Casa door: respond immediately; keep the visual entrance beat short. */
+  .replace('}, 420);\n  }\n\n  function showEntrance', '}, 180);\n  }\n\n  function showEntrance')
+
+  /* Pharaoh portal warp: preserve the buzz/zip sequence but remove the dead waiting. */
+  .replace("},1900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');", "},900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');")
+  .replace("},3150);\n    setTimeout(()=>{\n      openSlot();", "},1750);\n    setTimeout(()=>{\n      openSlot();")
+  .replace("},3480);", "},2100);")
+
+  /* Slot machine: faster reel response and result reveal. */
+  .replace("if(n>=14)", "if(n>=11)")
+  .replace("},420)}},82)", "},260)}},68)")
+  .replace("setTimeout(spin,120)", "setTimeout(spin,45)")
+  .replace("setTimeout(spin,R.p?1300:760)", "setTimeout(spin,R.p?760:480)");
+
+/* Immediate visual/touch feedback without changing approved layout. */
+html=html.replace('</head>', `
+<style id="build24-response-patch">
+button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:active,.door-enter:active,.navbtn:active,.portal-card:active{transform:translateY(1px) scale(.985)}
+.enter-button,.door-enter,.navbtn,.action-btn,.chip,.portal-card{transition-duration:.12s!important}
+.time-warp,.b23-warp-rings,.b23-warp-beams,.b23-warp-core{will-change:transform,opacity}
+</style>
+</head>`);
+
+/* Guard only navigation/transition controls from accidental double taps. Gameplay actions remain available normally. */
+html=html.replace('</body>', `
+<script id="build24-input-guard">
+(()=>{
+  const lock=new WeakMap();
+  document.addEventListener('pointerdown',e=>{
+    const el=e.target.closest('#enterCasa,#enterTime,.portal-card[data-era="Pharaohs of the Nile"],#b22PortalTop,#b22ScoreTop');
+    if(!el)return;
+    const now=performance.now(),last=lock.get(el)||0;
+    if(now-last<500){e.preventDefault();e.stopImmediatePropagation();return;}
+    lock.set(el,now);
+  },true);
+})();
+</script>
+</body>`);
     document.open();
     document.write(html);
     document.close();
