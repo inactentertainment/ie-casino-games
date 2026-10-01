@@ -482,7 +482,29 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .enter-button,.door-enter,.navbtn,.action-btn,.chip,.portal-card{transition-duration:.12s!important}
 .time-warp,.b23-warp-rings,.b23-warp-beams,.b23-warp-core{will-change:transform,opacity}
-</style></head>
+</style><style id="match-dealer-upgrade">
+.match-bet-readout{display:block;margin-top:6px;color:#dfe6ea;font-size:.58rem;font-weight:900;letter-spacing:.08em;text-align:center}
+.match-bet-card,.match-result-card{position:relative;overflow:hidden;text-align:center}
+.match-bet-card h2,.match-result-card h2{margin:6px 0 8px}
+.match-bet-copy{margin:0 auto 14px;max-width:440px;color:#b9c3c9;font-family:Georgia,serif;line-height:1.5}
+.match-chip-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:16px 0}
+.match-chip-grid button{min-height:54px;border:1px solid rgba(255,255,255,.30);border-radius:50%;background:radial-gradient(circle at 35% 28%,#f7fafb,#a6b0b8 42%,#545d65 74%,#22272c);color:#07090b;font-weight:1000;box-shadow:inset 0 2px 3px #fff,0 8px 18px rgba(0,0,0,.38);cursor:pointer}
+.match-chip-grid button:active{transform:translateY(3px) scale(.97)}
+.match-chip-grid button:disabled{opacity:.28;filter:grayscale(1);cursor:not-allowed}
+.match-bank{color:#eef2f4;font-size:.72rem;font-weight:900}
+.match-off{margin-top:8px;min-height:38px;padding:0 14px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:#171c20;color:#fff;font-weight:800}
+.match-result-card.win{border-color:rgba(255,237,160,.72);box-shadow:0 0 55px rgba(255,218,103,.20)}
+.match-result-card.loss{border-color:rgba(255,120,140,.40)}
+.match-result-card::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 8deg,rgba(255,255,255,.12) 9deg 12deg,transparent 13deg 28deg);animation:matchSpin 7s linear infinite;pointer-events:none}
+.match-result-card>*{position:relative;z-index:1}
+.match-result-mult{font-size:clamp(2.3rem,8vw,5rem);font-weight:1000;line-height:1;background:linear-gradient(110deg,#8b969f,#fff 45%,#aab4bb 65%,#fff0b2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.match-result-amount{margin-top:10px;font-size:1.25rem;font-weight:1000}
+.match-result-note{color:#b9c2c8;font-family:Georgia,serif}
+.match-continue{min-height:42px;padding:0 18px;border:1px solid rgba(255,255,255,.55);border-radius:999px;background:linear-gradient(145deg,#f6f8f9,#7d8790);color:#080a0c;font-weight:1000}
+@keyframes matchSpin{to{transform:rotate(360deg)}}
+@media(max-width:620px){.match-chip-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
 <body class="at-entrance">
   <header class="topbar">
     <div class="topbar__left music-switcher" aria-label="Music controls">
@@ -714,6 +736,25 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
     </div>
   </div>
 
+  <div class="modal hidden" id="matchDealerBetModal" role="dialog" aria-modal="true">
+    <div class="modal-card match-bet-card">
+      <button class="modal-close" id="matchBetClose" aria-label="Close">×</button>
+      <p class="eyebrow">MATCH THE DEALER</p><h2>Choose your side bet</h2>
+      <p class="match-bet-copy">Rank match pays 3×. Exact rank + suit pays 12×. Two matching cards can score twice.</p>
+      <div class="match-chip-grid"><button data-match-chip="50">50</button><button data-match-chip="100">100</button><button data-match-chip="250">250</button><button data-match-chip="500">500</button><button data-match-chip="1000">1000</button></div>
+      <div class="match-bank" id="matchBetBank">AVAILABLE CHIPS</div>
+      <button class="match-off" id="matchBetOff">NO SIDE BET</button>
+    </div>
+  </div>
+  <div class="modal hidden" id="matchDealerResultModal" role="dialog" aria-modal="true">
+    <div class="modal-card match-result-card" id="matchResultCard">
+      <p class="eyebrow">MATCH THE DEALER</p><h2 id="matchResultTitle">RESULT</h2>
+      <div class="match-result-mult" id="matchResultMult">3×</div>
+      <div class="match-result-amount" id="matchResultAmount">+300 CHIPS</div>
+      <p class="match-result-note" id="matchResultNote">Side bet settled. Your Casa 21 hand continues.</p>
+      <button class="match-continue" id="matchResultContinue">PLAY THE HAND</button>
+    </div>
+  </div>
   <div class="time-warp hidden" id="timeWarp" aria-live="polite">
     <div class="warp-rings"></div>
     <div class="warp-noise"></div>
@@ -1079,9 +1120,10 @@ const __DEALER_DATA__={"1":"assets/d2e5f252435e2fe6.webp","2":"assets/3e9221c517
     }
     if (room.phase === "betting") {
       if (self.bankroll < 50) return `<span class="waiting-copy">Below the 50-chip minimum.</span><button class="game-btn primary" data-action="rebuy">CASH IN 500</button>`;
-      return `<span class="chip-label">${self.ready ? `BET: ${money(self.bet)}` : "PLACE YOUR BET"}</span><div class="chip-row">${[50, 100, 250, 500, 1000].map((amount) => `<button class="chip" data-bet="${amount}" ${self.bankroll < amount ? "disabled" : ""}>${amount}</button>`).join("")}</div><button class="match-dealer-btn${localMatchDealer ? " on" : ""}" data-match-dealer>♠ MATCH THE DEALER<small>${localMatchDealer ? "50-CHIP SIDE BET ON" : "TAP TO ADD 50-CHIP SIDE BET"}</small></button><span class="waiting-copy">50-chip minimum · ${localMatchResult || "Choose a chip to deal."}</span>`;
+      return `<span class="chip-label">${self.ready ? `BET: ${money(self.bet)}` : "PLACE YOUR BET"}</span><div class="chip-row">${[50, 100, 250, 500, 1000].map((amount) => `<button class="chip" data-bet="${amount}" ${self.bankroll < amount ? "disabled" : ""}>${amount}</button>`).join("")}</div><button class="match-dealer-btn${localMatchBet ? " on" : ""}" data-match-dealer>♠ MATCH THE DEALER<small>${localMatchBet ? (money(localMatchBet)+"-CHIP SIDE BET · TAP TO CHANGE") : "TAP TO CHOOSE SIDE BET"}</small></button><span class="match-bet-readout">${localMatchBet ? ("SIDE BET: "+money(localMatchBet)+" CHIPS") : "SIDE BET: OFF"}</span><span class="waiting-copy">50-chip minimum · ${localMatchResult || "Choose a chip to deal."}</span>`;
     }
     if (room.phase === "playing") {
+      if(localSolo && localMatchPending) return `<span class="waiting-copy">MATCH THE DEALER is settling…</span>`;
       if (room.currentSeat !== self.seat) {
         const current = room.players.find((player) => player.seat === room.currentSeat);
         return `<span class="waiting-copy">${current ? `${esc(current.name)} is playing.` : "Dealer is moving."}<br>Your cards stay live.</span>`;
@@ -1415,14 +1457,63 @@ ${url}`);
 
 
   // Build 05 local solo engine: keeps Casa 21 playable in a standalone file.
-  let localSolo=false, localDeck=[], localMatchDealer=false, localMatchResult="";
+  let localSolo=false, localDeck=[], localMatchDealer=false, localMatchBet=0, localMatchResult="", localMatchPending=false, localMatchTimer=null;
   function localShuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   function localMakeDeck(){const d=[];for(let k=0;k<8;k++)for(const suit of ["♠","♥","♦","♣"])for(const rank of ["A","2","3","4","5","6","7","8","9","J","Q","K"])d.push({rank,suit});return localShuffle(d);}
   function localDraw(){if(localDeck.length<30)localDeck=localMakeDeck();return localDeck.pop();}
   function localValue(cards=[]){let total=0,aces=0;for(const c of cards){if(!c)continue;if(c.rank==="A"){total+=11;aces++;}else total += ["J","Q","K"].includes(c.rank)?10:Number(c.rank);}while(total>21&&aces){total-=10;aces--;}return total;}
   function localSelf(){return room?.players?.find(p=>p.id===room.selfId);}
-  function localNewRoom(){localDeck=localMakeDeck(); const p={id:"local-player",name:profile.name,avatar:profile.avatar,seat:0,bankroll:profile.buyIn,bet:0,ready:false,hands:[],activeHand:0,online:true}; room={code:"SOLO21",dealerIndex,isHost:true,selfId:p.id,phase:"betting",players:[p],dealerCards:[],dealerTotal:null,currentSeat:0,message:"Choose your bet. The dealer is ready.",round:0}; roomToken="local-token";localSolo=true;localMatchDealer=false;localMatchResult="";}
-  function localDeal(){const p=localSelf(); if(!p||!p.bet)return; p.hands=[{cards:[localDraw(),localDraw()],bet:p.bet,result:"",acted:false,doubled:false,canRescue:false}];p.activeHand=0;room.dealerCards=[localDraw(),null];room._dealerHole=localDraw();room.dealerTotal=null; if(localMatchDealer){const up=room.dealerCards[0], cards=p.hands[0].cards;let profit=0,labels=[];for(const c of cards){if(c.rank===up.rank){const suited=c.suit===up.suit;profit += suited ? 12 : 3;labels.push(suited?"SUITED MATCH":"RANK MATCH");}} if(profit){const award=50*(1+profit);p.bankroll+=award;localMatchResult=`MATCH THE DEALER · ${labels.join(" + ")} · +${award-50}`;}else localMatchResult="MATCH THE DEALER · NO MATCH";} room.phase="playing";room.currentSeat=p.seat;room.message="Your move.";const v=localValue(p.hands[0].cards);if(v===21)localFinishDealer();}
+  function localNewRoom(){localDeck=localMakeDeck(); const p={id:"local-player",name:profile.name,avatar:profile.avatar,seat:0,bankroll:profile.buyIn,bet:0,ready:false,hands:[],activeHand:0,online:true}; room={code:"SOLO21",dealerIndex,isHost:true,selfId:p.id,phase:"betting",players:[p],dealerCards:[],dealerTotal:null,currentSeat:0,message:"Choose your bet. The dealer is ready.",round:0}; roomToken="local-token";localSolo=true;localMatchDealer=false;localMatchBet=0;localMatchResult="";localMatchPending=false;}
+  function closeMatchDealerBet(){closeModal("matchDealerBetModal")}
+  function openMatchDealerBet(){
+    const p=localSelf();if(!p)return;const modal=document.getElementById("matchDealerBetModal");
+    document.getElementById("matchBetBank").textContent="AVAILABLE · "+money(p.bankroll)+" CHIPS";
+    modal.querySelectorAll("[data-match-chip]").forEach(b=>b.disabled=Number(b.dataset.matchChip)>p.bankroll);
+    openModal("matchDealerBetModal");sound("chip");
+  }
+  function setMatchDealerBet(amount){
+    const p=localSelf();if(!p)return;amount=Math.max(0,Number(amount)||0);
+    if(amount>p.bankroll){showToast("Not enough chips for that side bet.");return}
+    localMatchBet=amount;localMatchDealer=amount>0;localMatchResult=amount?("SIDE BET · "+money(amount)+" CHIPS"):"";
+    closeMatchDealerBet();renderTable();sound("chip");
+  }
+  function evaluateMatchDealer(cards,up,p){
+    if(!localMatchBet||!up)return null;let ranks=0,exact=0;
+    for(const card of cards){if(card.rank===up.rank){ranks++;if(card.suit===up.suit)exact++;}}
+    const plain=ranks-exact,multiplier=exact*12+plain*3;let title="NO MATCH",formula="0×";
+    if(exact===2){title="DOUBLE EXACT MATCH";formula="12× + 12× = 24×";}
+    else if(exact===1&&ranks===2){title="EXACT + RANK MATCH";formula="12× + 3× = 15×";}
+    else if(exact===1){title="EXACT MATCH";formula="12×";}
+    else if(ranks===2){title="DOUBLE MATCH";formula="3× + 3× = 6×";}
+    else if(ranks===1){title="RANK MATCH";formula="3×";}
+    const profit=localMatchBet*multiplier;if(multiplier>0)p.bankroll+=localMatchBet+profit;
+    return {title,formula,multiplier,profit,stake:localMatchBet};
+  }
+  function finishMatchDealerResult(){
+    clearTimeout(localMatchTimer);closeModal("matchDealerResultModal");if(!localMatchPending)return;localMatchPending=false;
+    if(room&&room._auto21){room._auto21=false;localFinishDealer();return;}
+    if(room){room.message="Your move.";renderTable();}
+  }
+  function showMatchDealerResult(r){
+    if(!r)return;localMatchPending=true;const card=document.getElementById("matchResultCard"),won=r.multiplier>0;
+    card.classList.toggle("win",won);card.classList.toggle("loss",!won);
+    document.getElementById("matchResultTitle").textContent=r.title;document.getElementById("matchResultMult").textContent=r.formula;
+    document.getElementById("matchResultAmount").textContent=won?("+"+money(r.profit)+" CHIPS"):("-"+money(r.stake)+" CHIPS");
+    document.getElementById("matchResultNote").textContent=won?"Side bet paid. Your Casa 21 hand continues.":"Side bet missed. The main hand is still alive.";
+    openModal("matchDealerResultModal");sound(won?"win":"loss");if(navigator.vibrate)navigator.vibrate(won?[55,35,80,35,120]:[130]);
+    localMatchTimer=setTimeout(finishMatchDealerResult,won?3300:2600);
+  }
+  function localDeal(){
+    const p=localSelf();if(!p||!p.bet)return;
+    p.hands=[{cards:[localDraw(),localDraw()],bet:p.bet,result:"",acted:false,doubled:false,canRescue:false}];p.activeHand=0;
+    room.dealerCards=[localDraw(),null];room._dealerHole=localDraw();room.dealerTotal=null;room.phase="playing";room.currentSeat=p.seat;
+    const total=localValue(p.hands[0].cards);room._auto21=total===21;
+    if(localMatchBet>0){
+      const result=evaluateMatchDealer(p.hands[0].cards,room.dealerCards[0],p);
+      localMatchResult=result.multiplier>0?(result.title+" · +"+money(result.profit)):("NO MATCH · -"+money(localMatchBet));
+      room.message="Match the Dealer is resolving…";renderTable();setTimeout(()=>showMatchDealerResult(result),420);
+    }else{localMatchResult="";room.message="Your move.";if(total===21)localFinishDealer();}
+  }
   function localSettleRound(){
     const p=localSelf();
     room.dealerTotal=localValue(room.dealerCards);
@@ -1465,13 +1556,17 @@ ${url}`);
       drawNext();
     },revealDelay);
   }
-  function localAction(action,extra={}){const p=localSelf();if(!p)return; if(action==="bet"){const amount=Math.max(50,Number(extra.amount)||50);if(amount>p.bankroll){showToast("Not enough chips for that bet.");return;}p.bet=amount;p.bankroll-=amount;if(localMatchDealer){if(p.bankroll<50){localMatchDealer=false;showToast("Not enough chips for the Match the Dealer side bet.");}else{p.bankroll-=50;}}p.ready=true;localDeal();}
+  function localAction(action,extra={}){const p=localSelf();if(!p)return; if(action==="bet"){
+      const amount=Math.max(50,Number(extra.amount)||50),side=localMatchBet||0;
+      if(amount+side>p.bankroll){showToast("Not enough chips for the main bet plus Match the Dealer.");return;}
+      p.bet=amount;p.bankroll-=amount;if(side>0){p.bankroll-=side;localMatchDealer=true}else localMatchDealer=false;p.ready=true;localDeal();
+    }
     else if(action==="hit"){const h=p.hands[p.activeHand];h.cards.push(localDraw());h.acted=true;if(localValue(h.cards)>=21)localFinishDealer();else room.message=`You have ${localValue(h.cards)}.`;}
     else if(action==="stand"){localFinishDealer();}
     else if(action==="double"){const h=p.hands[p.activeHand];if(p.bankroll<h.bet)return;p.bankroll-=h.bet;h.bet*=2;h.doubled=true;h.cards.push(localDraw());h.acted=true;localFinishDealer();}
     else if(action==="surrender"){const h=p.hands[p.activeHand];h.result="SURRENDER";localFinishDealer();}
     else if(action==="split"){const h=p.hands[p.activeHand];if(h.cards.length!==2||h.cards[0].rank!==h.cards[1].rank||p.bankroll<h.bet)return;p.bankroll-=h.bet;const c=h.cards.pop();h.cards.push(localDraw());const h2={cards:[c,localDraw()],bet:h.bet,result:"",acted:false,doubled:false,canRescue:false};p.hands.push(h2);room.message="Split hand ready. Play the first hand.";}
-    else if(action==="new-round"||action==="start"){p.bet=0;p.ready=false;p.hands=[];p.activeHand=0;room.dealerCards=[];room.dealerTotal=null;room.phase="betting";room.currentSeat=p.seat;room.message="Choose your bet.";}
+    else if(action==="new-round"||action==="start"){p.bet=0;p.ready=false;p.hands=[];p.activeHand=0;room.dealerCards=[];room.dealerTotal=null;room.phase="betting";room.currentSeat=p.seat;room.message="Choose your bet.";localMatchDealer=false;localMatchBet=0;localMatchResult="";localMatchPending=false;}
     else if(action==="rebuy"){p.bankroll+=500;room.message="500 fictional chips added.";}
   }
 
@@ -1537,11 +1632,18 @@ ${url}`);
     $("#roomCodeButton").addEventListener("click", shareRoom);
     $("#closeResult").addEventListener("click", closeRoundResult);
     $("#resultFlash").addEventListener("click", (event) => { if (event.target === $("#resultFlash")) closeRoundResult(); });
+    $("#matchDealerBetModal")?.addEventListener("click",(event)=>{
+      if(event.target===event.currentTarget)closeMatchDealerBet();
+      const chip=event.target.closest("[data-match-chip]");if(chip&&!chip.disabled)setMatchDealerBet(Number(chip.dataset.matchChip));
+    });
+    $("#matchBetClose")?.addEventListener("click",closeMatchDealerBet);
+    $("#matchBetOff")?.addEventListener("click",()=>setMatchDealerBet(0));
+    $("#matchResultContinue")?.addEventListener("click",finishMatchDealerResult);
     const handleGameControl = (event) => {
       const actionButton = event.target.closest("[data-action]");
       const betButton = event.target.closest("[data-bet]");
       const matchButton = event.target.closest("[data-match-dealer]");
-      if (matchButton && localSolo && room?.phase === "betting") { localMatchDealer=!localMatchDealer; localMatchResult=""; renderTable(); sound("chip"); return; }
+      if (matchButton && localSolo && room?.phase === "betting") { openMatchDealerBet(); return; }
       if (actionButton && !actionButton.disabled) tableAction(actionButton.dataset.action);
       if (betButton && !betButton.disabled) tableAction("bet", { amount: Number(betButton.dataset.bet) });
     };
