@@ -1,16 +1,14 @@
-name: Deploy IE Casino Games to GitHub Pages
+name: Build IE Casino Games for GitHub Pages
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
-  group: pages
+  group: gh-pages-build
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +31,7 @@ jobs:
           raw_b64 = ''.join(p.read_text().strip() for p in parts)
           html = base64.b64decode(raw_b64).decode('utf-8')
 
-          # Keep the approved Build 23 visuals and structure; tighten only interaction timing.
+          # Preserve approved Build 23; only restore faster interaction timing.
           replacements = [
               ('}, 420);\n  }\n\n  function showEntrance', '}, 180);\n  }\n\n  function showEntrance'),
               ("},1900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');", "},900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');"),
@@ -65,7 +63,6 @@ jobs:
               'audio/mpeg':'.mp3','audio/wav':'.wav','audio/ogg':'.ogg',
               'video/mp4':'.mp4','image/svg+xml':'.svg','font/woff2':'.woff2'
           }
-
           def repl(m):
               mime=m.group(1)
               payload=re.sub(r'\s+','',m.group(2))
@@ -79,40 +76,27 @@ jobs:
               return f'assets/{name}'
 
           html = pat.sub(repl, html)
-
-          # GitHub Pages project-path-safe links for same-site navigation.
-          html = html.replace('href="/', 'href="./').replace("location.href='/'", "location.href='./'")
-          html = html.replace('src="/', 'src="./')
-
           (out/'index.html').write_text(html, encoding='utf-8')
           (out/'.nojekyll').write_text('')
           (out/'build-info.json').write_text(json.dumps({
-              'build':'25-pages',
+              'build':'github-pages-25',
               'source':'approved Build 23',
-              'assets':len(seen),
-              'html_bytes':len(html.encode())
+              'assets':len(seen)
           }, indent=2))
-
-          print(f'GitHub Pages package: {len(html):,} chars HTML, {len(seen)} extracted assets')
+          print(f'Prepared {len(seen)} assets for GitHub Pages')
           PY
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publish gh-pages branch
+        shell: bash
+        run: |
+          git config user.name "IE Casino Games Build Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch origin gh-pages || true
+          git switch --orphan gh-pages-temp
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -R _site/. .
+          rm -rf _site
+          git add -A
+          git commit -m "Publish approved IE Casino Games"
+          git branch -M gh-pages
+          git push --force origin gh-pages
