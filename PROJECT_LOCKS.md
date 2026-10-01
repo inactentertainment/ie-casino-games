@@ -6,8 +6,8 @@ This file is the technical source of truth for approved areas. Do not rebuild lo
 
 ### Lobby
 - Status: LOCKED
-- Baseline commit: d47a52dbe23590508fb0fdcff6e0c9c9c1c7b434
-- Visual rule: use the approved three-door lobby image as the visible lobby; functionality is layered on top with hotspots.
+- Baseline commit: 51c9d7fdbf2cf2d48e5c90322e06420d19a5f04b
+- Visual rule: the approved three-door lobby artwork is embedded directly in index.html; do not substitute CSS-built doors or external image URLs.
 - Time Travel Slots: active
 - Casa 21: active
 - The Big Bluff: coming soon
