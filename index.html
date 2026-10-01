@@ -498,10 +498,10 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 .match-result-card::before{content:"";position:absolute;inset:-40%;background:conic-gradient(from 0deg,transparent 0 8deg,rgba(255,255,255,.12) 9deg 12deg,transparent 13deg 28deg);animation:matchSpin 7s linear infinite;pointer-events:none}
 .match-result-card>*{position:relative;z-index:1}
 .match-result-mult{font-size:clamp(2.3rem,8vw,5rem);font-weight:1000;line-height:1;background:linear-gradient(110deg,#8b969f,#fff 45%,#aab4bb 65%,#fff0b2);-webkit-background-clip:text;background-clip:text;color:transparent}
-.match-result-amount{margin-top:10px;font-size:1.25rem;font-weight:1000}
+.match-result-amount{margin-top:10px;font-size:clamp(1.45rem,5vw,2.35rem);font-weight:1000;font-variant-numeric:tabular-nums;letter-spacing:.04em}.match-result-amount.counting{animation:matchCountPulse .18s ease-in-out infinite alternate}.match-result-card.loss .match-result-amount{color:#ff9aaa;text-shadow:0 0 18px rgba(255,70,100,.26)}.match-result-card.win .match-result-amount{color:#fff2b6;text-shadow:0 0 24px rgba(255,222,120,.34)}
 .match-result-note{color:#b9c2c8;font-family:Georgia,serif}
 .match-continue{min-height:42px;padding:0 18px;border:1px solid rgba(255,255,255,.55);border-radius:999px;background:linear-gradient(145deg,#f6f8f9,#7d8790);color:#080a0c;font-weight:1000}
-@keyframes matchSpin{to{transform:rotate(360deg)}}
+@keyframes matchSpin{to{transform:rotate(360deg)}}@keyframes matchCountPulse{to{transform:scale(1.025)}}.match-result-card.win::after{content:"";position:absolute;inset:-35%;z-index:0;background:repeating-conic-gradient(from 0deg,transparent 0 10deg,rgba(255,238,170,.22) 11deg 13deg,transparent 14deg 24deg);animation:matchBurst 1.5s ease-out forwards;pointer-events:none}@keyframes matchBurst{0%{transform:scale(.25) rotate(0);opacity:0}24%{opacity:1}100%{transform:scale(1.2) rotate(28deg);opacity:0}}
 @media(max-width:620px){.match-chip-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
@@ -1494,14 +1494,47 @@ ${url}`);
     if(room&&room._auto21){room._auto21=false;localFinishDealer();return;}
     if(room){room.message="Your move.";renderTable();}
   }
+  function matchCountTick(up=true){
+    try{
+      audioContext ||= new (window.AudioContext||window.webkitAudioContext)();
+      const o=audioContext.createOscillator(),g=audioContext.createGain(),n=audioContext.currentTime;
+      o.type=up?"sine":"triangle";
+      o.frequency.setValueAtTime(up?640:260,n);
+      o.frequency.exponentialRampToValueAtTime(up?940:135,n+.055);
+      g.gain.setValueAtTime(.026,n);g.gain.exponentialRampToValueAtTime(.001,n+.075);
+      o.connect(g);g.connect(audioContext.destination);o.start(n);o.stop(n+.08);
+    }catch{}
+  }
+  function animateMatchBankroll(r,won){
+    const p=localSelf(),out=document.getElementById("matchResultAmount");if(!p||!out)return;
+    const end=Math.round(p.bankroll);
+    const delta=won?(r.stake+r.profit):r.stake;
+    const start=won?Math.max(0,end-delta):end+delta;
+    const duration=won?1900:1500,began=performance.now();let lastStep=-1;
+    out.classList.add("counting");
+    const step=(now)=>{
+      const t=Math.min(1,(now-began)/duration),ease=won?(1-Math.pow(1-t,3)):(t*t*(3-2*t));
+      const value=Math.round(start+(end-start)*ease);
+      out.textContent=money(value)+" CHIPS";
+      const bucket=Math.floor(t*14);
+      if(bucket!==lastStep&&t<.97){lastStep=bucket;matchCountTick(won);}
+      if(t<1)requestAnimationFrame(step);else{out.textContent=money(end)+" CHIPS";out.classList.remove("counting");}
+    };
+    requestAnimationFrame(step);
+  }
   function showMatchDealerResult(r){
     if(!r)return;localMatchPending=true;const card=document.getElementById("matchResultCard"),won=r.multiplier>0;
     card.classList.toggle("win",won);card.classList.toggle("loss",!won);
-    document.getElementById("matchResultTitle").textContent=r.title;document.getElementById("matchResultMult").textContent=r.formula;
-    document.getElementById("matchResultAmount").textContent=won?("+"+money(r.profit)+" CHIPS"):("-"+money(r.stake)+" CHIPS");
-    document.getElementById("matchResultNote").textContent=won?"Side bet paid. Your Casa 21 hand continues.":"Side bet missed. The main hand is still alive.";
-    openModal("matchDealerResultModal");sound(won?"win":"loss");if(navigator.vibrate)navigator.vibrate(won?[55,35,80,35,120]:[130]);
-    localMatchTimer=setTimeout(finishMatchDealerResult,won?3300:2600);
+    document.getElementById("matchResultTitle").textContent=won?r.title:"NO MATCH";
+    document.getElementById("matchResultMult").textContent=won?r.formula:"SIDE BET LOST";
+    document.getElementById("matchResultNote").textContent=won
+      ?("+"+money(r.profit)+" SIDE-BET WIN · bankroll rising")
+      :("-"+money(r.stake)+" SIDE BET · bankroll falling");
+    openModal("matchDealerResultModal");
+    animateMatchBankroll(r,won);
+    sound(won?"win":"loss");
+    if(navigator.vibrate)navigator.vibrate(won?[55,35,80,35,120]:[130]);
+    localMatchTimer=setTimeout(finishMatchDealerResult,won?4700:3900);
   }
   function localDeal(){
     const p=localSelf();if(!p||!p.bet)return;
