@@ -1,0 +1,66 @@
+name: Rebuild live casino from approved Build 23
+on:
+  push:
+    paths:
+      - '.github/workflows/rebuild-live.yml'
+      - 'build23/**'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct approved Build 23 directly as index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, re
+
+          parts = sorted(Path('build23').glob('payload-*.b64'))
+          if len(parts) != 39:
+              raise SystemExit(f'Expected 39 payload files, found {len(parts)}')
+          b64 = ''.join(p.read_text().strip() for p in parts)
+          html = base64.b64decode(b64).decode('utf-8')
+
+          # Build 25: preserve approved visuals/layout; tighten timing only.
+          replacements = [
+              ('}, 420);\n  }\n\n  function showEntrance', '}, 180);\n  }\n\n  function showEntrance'),
+              ("},1900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');", "},900);\n    setTimeout(()=>{\n      warp.classList.add('b23-flash');"),
+              ("},3150);\n    setTimeout(()=>{\n      openSlot();", "},1750);\n    setTimeout(()=>{\n      openSlot();"),
+              ("},3480);", "},2100);"),
+              ("if(n>=14)", "if(n>=11)"),
+              ("},420)}},82)", "},260)}},68)"),
+              ("setTimeout(spin,120)", "setTimeout(spin,45)"),
+              ("setTimeout(spin,R.p?1300:760)", "setTimeout(spin,R.p?760:480)"),
+          ]
+          for old,new in replacements:
+              html = html.replace(old,new)
+
+          response_patch = '''<style id="build25-response-patch">
+          button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+          .enter-button,.door-enter,.navbtn,.action-btn,.chip,.portal-card{transition-duration:.12s!important}
+          .time-warp,.b23-warp-rings,.b23-warp-beams,.b23-warp-core{will-change:transform,opacity}
+          </style>'''
+          html = html.replace('</head>', response_patch + '\n</head>', 1)
+          html = html.replace('<title>', '<title>Build 25 · ', 1)
+
+          Path('index.html').write_text(html, encoding='utf-8')
+          print(f'Wrote direct index.html: {len(html):,} chars')
+          PY
+      - name: Commit direct live build
+        shell: bash
+        run: |
+          git config user.name "IE Casino Games Build Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Build 25: serve approved casino directly with timing fixes"
+            git push
+          fi
