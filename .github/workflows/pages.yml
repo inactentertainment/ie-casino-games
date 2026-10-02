@@ -1,7 +1,5 @@
 name: Build IE Casino Games for GitHub Pages
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
