@@ -1,0 +1,36 @@
+name: Create downloadable project backup
+on:
+  push:
+    paths:
+      - '.github/workflows/project-backup.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Include live GitHub Pages branch
+        shell: bash
+        run: |
+          mkdir -p BACKUP_META
+          git fetch origin gh-pages || true
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git archive --format=zip --output=BACKUP_META/live-gh-pages.zip origin/gh-pages
+          fi
+          git rev-parse HEAD > BACKUP_META/source-commit.txt
+          printf '%s
+' 'Repository: inactentertainment/ie-casino-games' 'Primary source: main branch' 'Live site: gh-pages branch' > BACKUP_META/README.txt
+      - name: Package project
+        shell: bash
+        run: |
+          zip -qr IE-Casino-Games-MASTER-BACKUP.zip . -x '.git/*' 'IE-Casino-Games-MASTER-BACKUP.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IE-Casino-Games-MASTER-BACKUP
+          path: IE-Casino-Games-MASTER-BACKUP.zip
+          compression-level: 0
+          retention-days: 30
