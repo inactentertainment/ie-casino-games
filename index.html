@@ -1904,23 +1904,85 @@ function press(el){el.addEventListener(&#x27;pointerdown&#x27;,()=&gt;{el.classL
   }
   const overlay=document.getElementById('b22SlotOverlay'),score=document.getElementById('b22ScoreModal');
   function softenMusic(){['timeClubTrack','timeJazzTrack','timeHiphopTrack'].forEach(id=>{const a=document.getElementById(id);if(a)a.volume=.14})}
-  function openSlot(){
+  const ERA_SYMBOL_LABELS={
+    'Echoes of Olympus':['ZEUS','TEMPLE','LAUREL','OWL','AMPHORA','LYRE','PEGASUS','OLIVE','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Colosseum of Conquest':['GLADIATOR','COLOSSEUM','HELMET','SHIELD','LAUREL','EAGLE','SWORD','CHARIOT','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Silk Dynasty':['DRAGON','PAGODA','LOTUS','JADE','FAN','LANTERN','COIN','KNOT','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Norse Tide':['VIKING','LONGSHIP','RUNE','RAVEN','HAMMER','SHIELD','WOLF','HORN','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Crown & Castle':['CROWN','CASTLE','KNIGHT','SHIELD','SWORD','GOBLET','ROSE','BANNER','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Renaissance Royale':['PORTRAIT','PALACE','QUILL','PALETTE','MASK','LYRE','BOOK','ROSE','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Empire of the Seas':['CAPTAIN','GALLEON','COMPASS','ANCHOR','MAP','CHEST','WAVE','TELESCOPE','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Steam & Gears':['ENGINE','GEAR','CLOCK','GOGGLES','KEY','LOCOMOTIVE','VALVE','BLUEPRINT','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Harlem Renaissance':['SINGER','SAX','PIANO','MIC','RECORD','MARQUEE','DANCER','POET','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Jurassic Age':['T-REX','TRICERATOPS','RAPTOR','EGG','VOLCANO','AMBER','FERN','FOSSIL','WILD','SCATTER','BONUS','FREE SPIN'],
+    'Moonshot Tomorrow':['ASTRONAUT','ROCKET','MOON','EARTH','SATELLITE','MODULE','PORTAL','HOURGLASS','WILD','SCATTER','BONUS','FREE SPIN']
+  };
+  const BASE_KEYS=['pharaoh','temple','scarab','eye','ankh','lotus','crook','anubis','wild','scatter','bonus','free_spins'];
+  const POS=['15% 15%','50% 15%','85% 15%','15% 48%','50% 48%','85% 48%','20% 82%','80% 82%','50% 30%','30% 65%','70% 65%','50% 90%'];
+
+  function titleMarkup(era){
+    const words=era.toUpperCase().split(' ');
+    if(words.length<=2)return '<span class="p">'+words.join(' ')+'</span><span class="n">&nbsp;</span>';
+    if(words.includes('OF')){
+      const i=words.indexOf('OF');
+      return '<span class="p">'+words.slice(0,i).join(' ')+'</span><span class="o">OF</span><span class="n">'+words.slice(i+1).join(' ')+'</span>';
+    }
+    const cut=Math.ceil(words.length/2);
+    return '<span class="p">'+words.slice(0,cut).join(' ')+'</span><span class="n">'+words.slice(cut).join(' ')+'</span>';
+  }
+
+  function themeSlot(card){
+    const era=card?.dataset?.era||'Pharaohs of the Nile';
+    const bg=card?.dataset?.bg||'assets/0758ebdbf0e27c0f.webp';
+    const frame=document.getElementById('b22SlotFrame');
+    frame.title=era+' slot game';
+    const apply=()=>{
+      const d=frame.contentDocument;if(!d)return;
+      d.body.style.backgroundImage='radial-gradient(ellipse at center,rgba(0,0,0,.74) 0 18%,rgba(0,0,0,.55) 32%,rgba(0,0,0,.25) 49%,rgba(0,0,0,.07) 67%,rgba(0,0,0,0) 86%),url('+bg+')';
+      const strong=d.querySelector('.title strong');if(strong)strong.innerHTML=titleMarkup(era);
+      let style=d.getElementById('era-theme-style');
+      if(!style){style=d.createElement('style');style.id='era-theme-style';style.textContent='.cell.era-themed{position:relative}.cell.era-themed img{object-fit:cover!important;filter:brightness(.78) saturate(1.12) contrast(1.08)!important}.cell.era-themed::after{content:attr(data-symbol);position:absolute;left:2px;right:2px;bottom:2px;padding:2px 1px;border-radius:4px;background:rgba(0,0,0,.68);color:#fff;font-size:clamp(.29rem,.72vh,.42rem);font-weight:1000;letter-spacing:.025em;text-align:center;text-shadow:0 1px 3px #000;pointer-events:none}.cell.era-themed.win::after{background:rgba(116,85,13,.82);color:#fff4b4}';d.head.appendChild(style)}
+      if(frame.__eraObserver)frame.__eraObserver.disconnect();
+      const labels=ERA_SYMBOL_LABELS[era]||null;
+      const applyCells=()=>{
+        d.querySelectorAll('.cell').forEach(cell=>{
+          const img=cell.querySelector('img');if(!img)return;
+          const key=(img.alt||'').toLowerCase();
+          const idx=BASE_KEYS.indexOf(key);
+          if(era==='Pharaohs of the Nile'||idx<0||!labels){
+            cell.classList.remove('era-themed');cell.removeAttribute('data-symbol');img.style.objectPosition='';return;
+          }
+          if(img.dataset.era!==era){img.src=bg;img.dataset.era=era}
+          img.style.objectPosition=POS[idx]||'50% 50%';
+          cell.classList.add('era-themed');cell.dataset.symbol=labels[idx]||key.toUpperCase();
+        });
+      };
+      applyCells();
+      frame.__eraObserver=new MutationObserver(applyCells);
+      const reels=d.getElementById('reels');if(reels)frame.__eraObserver.observe(reels,{childList:true,subtree:true});
+    };
+    if(frame.contentDocument?.readyState==='complete'||frame.contentDocument?.readyState==='interactive')apply();
+    else frame.addEventListener('load',apply,{once:true});
+  }
+
+  function openSlot(card){
     document.body.classList.add('b22-slot-open');
     document.getElementById('timeTravelView')?.classList.add('hidden');
     document.getElementById('timeLanding')?.classList.add('hidden');
     document.getElementById('genericEraLanding')?.classList.add('hidden');
-    overlay.classList.remove('hidden');softenMusic();window.scrollTo(0,0);
+    overlay.classList.remove('hidden');themeSlot(card);softenMusic();window.scrollTo(0,0);
   }
-  function portals(){document.body.classList.remove('b22-slot-open');overlay.classList.add('hidden');document.getElementById('timeTravelView')?.classList.remove('hidden');window.scrollTo(0,0)}
+  function portals(){document.body.classList.remove('b22-slot-open');overlay.classList.add('hidden');if(document.getElementById('b22SlotFrame').__eraObserver)document.getElementById('b22SlotFrame').__eraObserver.disconnect();document.getElementById('timeTravelView')?.classList.remove('hidden');window.scrollTo(0,0)}
   document.getElementById('b22PortalTop')?.addEventListener('click',portals);
   document.getElementById('b22ScoreTop')?.addEventListener('click',()=>score.classList.remove('hidden'));
   document.getElementById('b22ScoreClose')?.addEventListener('click',()=>score.classList.add('hidden'));
   score.addEventListener('click',e=>{if(e.target===score)score.classList.add('hidden')});
   document.addEventListener('click',function(e){
-    const card=e.target.closest('.portal-card[data-era="Pharaohs of the Nile"]');
+    const card=e.target.closest('.portal-card[data-era]');
     if(!card)return;
     e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-    if(window.b23WarpToSlot){window.b23WarpToSlot(openSlot,card);}else{openSlot();}
+    const launch=()=>openSlot(card);
+    if(window.b23WarpToSlot){window.b23WarpToSlot(launch,card);}else{launch();}
   },true);
   window.addEventListener('message',e=>{
     if(!e.data||e.data.type!=='b22-rules')return;
