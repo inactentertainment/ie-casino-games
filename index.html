@@ -504,6 +504,12 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 @keyframes matchSpin{to{transform:rotate(360deg)}}@keyframes matchCountPulse{to{transform:scale(1.025)}}.match-result-card.win::after{content:"";position:absolute;inset:-35%;z-index:0;background:repeating-conic-gradient(from 0deg,transparent 0 10deg,rgba(255,238,170,.22) 11deg 13deg,transparent 14deg 24deg);animation:matchBurst 1.5s ease-out forwards;pointer-events:none}@keyframes matchBurst{0%{transform:scale(.25) rotate(0);opacity:0}24%{opacity:1}100%{transform:scale(1.2) rotate(28deg);opacity:0}}
 @media(max-width:620px){.match-chip-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
+<link rel="manifest" href="manifest.webmanifest" type="application/manifest+json">
+<link rel="apple-touch-icon" sizes="180x180" href="app-assets/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="IE Casino">
+<script defer src="app-assets/install.js"></script>
 </head>
 <body class="at-entrance">
   <header class="topbar">
