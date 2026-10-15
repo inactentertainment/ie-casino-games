@@ -161,6 +161,10 @@ jobs:
           print(f'Prepared {len(seen)} assets for GitHub Pages')
           PY
 
+      - name: Preserve installable app support in future casino builds
+        working-directory: _site
+        run: python ../.github/scripts/enable_app.py
+
       - name: Publish gh-pages branch
         shell: bash
         run: |
