@@ -163,7 +163,9 @@ jobs:
 
       - name: Preserve installable app support in future casino builds
         working-directory: _site
-        run: python ../.github/scripts/enable_app.py
+        run: |
+          if [ -d ../app-assets ]; then cp -R ../app-assets .; fi
+          python ../.github/scripts/enable_app.py
 
       - name: Publish gh-pages branch
         shell: bash
